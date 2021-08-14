@@ -28,11 +28,11 @@ const options = {
 
 const signale = new Signale(options);
 
-const redisClient = redis.createClient();
+const redisClient = redis.createClient(config.database.redis);
 
-const io = require("socket.io")(1027);
+const io = require("socket.io")(8080);
 
-const patternDir = __dirname + "/../resources/public/patterns/";
+const patternDir = __dirname + "/../patterns/";
 
 const getPatternDir = (name, difficulty) => {
   return `${name}/${difficulty}.json`;
