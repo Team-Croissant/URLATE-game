@@ -1,0 +1,6 @@
+{
+  "project" : {
+    "api": "https://api.example.com",
+    "secretKey": "Something Random"
+  }
+}
