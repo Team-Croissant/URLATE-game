@@ -1,6 +1,10 @@
 {
   "project" : {
     "api": "https://api.example.com",
-    "secretKey": "Something Random"
+    "secretKey": "Something Random",
+    "port": 8080
+  },
+  "database": {
+    "redis": "redisURL"
   }
 }

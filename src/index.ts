@@ -30,7 +30,7 @@ const signale = new Signale(options);
 
 const redisClient = redis.createClient(config.database.redis);
 
-const io = require("socket.io")(8080);
+const io = require("socket.io")(config.project.port);
 
 const patternDir = __dirname + "/../patterns/";
 
