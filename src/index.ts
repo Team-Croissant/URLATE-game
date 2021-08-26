@@ -1,6 +1,6 @@
-import redis = require("redis");
-import fetch = require("node-fetch");
-import fs = require("fs");
+import * as redis from "redis";
+import * as fetch from "node-fetch";
+import * as fs from "fs";
 
 const config = require(__dirname + "/../config/config.json");
 
