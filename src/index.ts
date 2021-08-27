@@ -145,7 +145,7 @@ io.on("connection", (socket) => {
   redisClient.set(`socket${socket.id}`, socket.handshake.query.id);
   redisClient.set(`user${socket.id}`, socket.handshake.query.name);
 
-  socket.on("game init", async (name, difficulty) => {
+  socket.on("game init", async (name, difficulty, rate) => {
     const isUserConnected = await redisGet(`score${socket.id}`);
     if (isUserConnected === null) {
       signale.success(`${socket.id} : Game Initialized`);
@@ -161,6 +161,7 @@ io.on("connection", (socket) => {
           redisClient.set(`name${socket.id}`, data.information.track);
         }
       );
+      redisClient.set(`rate${socket.id}`, rate);
       redisClient.set(`difficulty${socket.id}`, difficulty);
       redisClient.set(`score${socket.id}`, 0);
       redisClient.set(`combo${socket.id}`, 0);
@@ -209,6 +210,7 @@ io.on("connection", (socket) => {
       `${await redisGet(`pattern${socket.id}`)}`
     );
     try {
+      const rate = Number(await redisGet(`rate${socket.id}`));
       const w = Number(await redisGet(`w${socket.id}`));
       const h = Number(await redisGet(`h${socket.id}`));
       const width = Number(await redisGet(`width${socket.id}`));
@@ -225,7 +227,7 @@ io.on("connection", (socket) => {
       destroyedNotes = destroyedNotes.map(Number);
       let circleBulletAngles = await redisGet(`circleBulletAngles${socket.id}`);
       circleBulletAngles = `${circleBulletAngles}`.split(",").map(Number);
-      const seek = date - ms - offset;
+      const seek = (date - ms) * rate - offset;
       let start = lowerBound(pattern.triggers, 0);
       let end = upperBound(pattern.triggers, seek);
       const renderTriggers = pattern.triggers.slice(start, end);
@@ -344,10 +346,11 @@ io.on("connection", (socket) => {
       `${await redisGet(`pattern${socket.id}`)}`
     );
     try {
+      const rate = Number(await redisGet(`rate${socket.id}`));
       const ms = Number(await redisGet(`ms${socket.id}`));
       const bpm = Number(await redisGet(`bpm${socket.id}`));
       const speed = Number(await redisGet(`speed${socket.id}`));
-      const seek = date - ms - offset;
+      const seek = (date - ms) * rate - offset;
       const start = lowerBound(pattern.patterns, seek - (bpm * 4) / speed);
       const end = upperBound(pattern.patterns, seek + (bpm * 14) / speed);
       const renderNotes = pattern.patterns.slice(start, end);
