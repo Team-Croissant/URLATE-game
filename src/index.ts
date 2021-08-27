@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 import * as redis from "redis";
 import * as fetch from "node-fetch";
 import * as fs from "fs";
@@ -39,7 +40,7 @@ const getPatternDir = (name, difficulty) => {
 };
 
 const redisGet = (key) => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     redisClient.get(key, (err, data) => {
       resolve(data);
     });
@@ -47,7 +48,7 @@ const redisGet = (key) => {
 };
 
 const redisSGet = (key): Promise<number[]> => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     redisClient.smembers(key, (err, data) => {
       resolve(data);
     });
@@ -55,7 +56,7 @@ const redisSGet = (key): Promise<number[]> => {
 };
 
 const getTan = (deg) => {
-  let rad = (deg * Math.PI) / 180;
+  const rad = (deg * Math.PI) / 180;
   return Math.tan(rad);
 };
 
@@ -106,7 +107,7 @@ const calculateScore = async (judge, id) => {
     redisClient.set(`bullet${id}`, bullet);
     return;
   }
-  let patternLength = await Number(await redisGet(`patternLength${id}`));
+  const patternLength = await Number(await redisGet(`patternLength${id}`));
   let score = await Number(await redisGet(`score${id}`));
   let combo = await Number(await redisGet(`combo${id}`));
   let perfect = await Number(await redisGet(`perfect${id}`));
@@ -152,7 +153,7 @@ io.on("connection", (socket) => {
         patternDir + getPatternDir(name, difficulty),
         "utf8",
         (err, file) => {
-          let data = JSON.parse(file);
+          const data = JSON.parse(file);
           redisClient.set(`pattern${socket.id}`, file);
           redisClient.set(`bpm${socket.id}`, data.information.bpm);
           redisClient.set(`speed${socket.id}`, data.information.speed);
@@ -204,7 +205,9 @@ io.on("connection", (socket) => {
   });
 
   socket.on("game update", async (x, y, offset, date) => {
-    let pattern = await JSON.parse(`${await redisGet(`pattern${socket.id}`)}`);
+    const pattern = await JSON.parse(
+      `${await redisGet(`pattern${socket.id}`)}`
+    );
     try {
       const w = Number(await redisGet(`w${socket.id}`));
       const h = Number(await redisGet(`h${socket.id}`));
@@ -259,8 +262,8 @@ io.on("connection", (socket) => {
         const e = renderBullets[i];
         if (destroyedBullets.indexOf(start + i) == -1) {
           const p = ((seek - e.ms) / ((bpm * 40) / speed / e.speed)) * 100;
-          let left = e.direction == "L";
-          let ex = (left ? -1 : 1) * (100 - p);
+          const left = e.direction == "L";
+          const ex = (left ? -1 : 1) * (100 - p);
           let ey = 0;
           if (e.value == 0) {
             ey = e.location + p * getTan(e.angle) * (left ? 1 : -1);
@@ -337,11 +340,13 @@ io.on("connection", (socket) => {
   });
 
   socket.on("game click", async (x, y, offset, date) => {
-    let pattern = await JSON.parse(`${await redisGet(`pattern${socket.id}`)}`);
+    const pattern = await JSON.parse(
+      `${await redisGet(`pattern${socket.id}`)}`
+    );
     try {
       const ms = Number(await redisGet(`ms${socket.id}`));
-      let bpm = Number(await redisGet(`bpm${socket.id}`));
-      let speed = Number(await redisGet(`speed${socket.id}`));
+      const bpm = Number(await redisGet(`bpm${socket.id}`));
+      const speed = Number(await redisGet(`speed${socket.id}`));
       const seek = date - ms - offset;
       const start = lowerBound(pattern.patterns, seek - (bpm * 4) / speed);
       const end = upperBound(pattern.patterns, seek + (bpm * 14) / speed);
@@ -359,11 +364,11 @@ io.on("connection", (socket) => {
             Math.sqrt(Math.pow(powX, 2) + Math.pow(powY, 2)) <=
             width / 40 + width / 70
           ) {
-            let perfectJudge = 60000 / bpm / 8;
-            let greatJudge = 60000 / bpm / 5;
-            let goodJudge = 60000 / bpm / 3;
-            let badJudge = 60000 / bpm / 2;
-            let noteMs = renderNotes[i].ms;
+            const perfectJudge = 60000 / bpm / 8;
+            const greatJudge = 60000 / bpm / 5;
+            const goodJudge = 60000 / bpm / 3;
+            const badJudge = 60000 / bpm / 2;
+            const noteMs = renderNotes[i].ms;
             if (seek < noteMs + perfectJudge && seek > noteMs - perfectJudge) {
               signale.success(`${socket.id} : Perfect`);
               calculateScore("perfect", socket.id);
@@ -399,17 +404,17 @@ io.on("connection", (socket) => {
 
   socket.on("game end", async (maxCombo) => {
     signale.stop(`${socket.id} : Game Finished`);
-    let name = await redisGet(`name${socket.id}`);
-    let user = await redisGet(`user${socket.id}`);
-    let difficulty = await Number(await redisGet(`difficulty${socket.id}`));
-    let score = await Number(await redisGet(`score${socket.id}`));
-    let perfect = await Number(await redisGet(`perfect${socket.id}`));
-    let great = await Number(await redisGet(`great${socket.id}`));
-    let good = await Number(await redisGet(`good${socket.id}`));
-    let bad = await Number(await redisGet(`bad${socket.id}`));
-    let miss = await Number(await redisGet(`miss${socket.id}`));
-    let bullet = await Number(await redisGet(`bullet${socket.id}`));
-    let accuracy = Number(
+    const name = await redisGet(`name${socket.id}`);
+    const user = await redisGet(`user${socket.id}`);
+    const difficulty = await Number(await redisGet(`difficulty${socket.id}`));
+    const score = await Number(await redisGet(`score${socket.id}`));
+    const perfect = await Number(await redisGet(`perfect${socket.id}`));
+    const great = await Number(await redisGet(`great${socket.id}`));
+    const good = await Number(await redisGet(`good${socket.id}`));
+    const bad = await Number(await redisGet(`bad${socket.id}`));
+    const miss = await Number(await redisGet(`miss${socket.id}`));
+    const bullet = await Number(await redisGet(`bullet${socket.id}`));
+    const accuracy = Number(
       (
         ((perfect + (great / 10) * 7 + good / 2 + (bad / 10) * 3) /
           (perfect + great + good + bad + miss + bullet)) *
