@@ -108,6 +108,7 @@ const calculateScore = async (judge, id) => {
     return;
   }
   const patternLength = await Number(await redisGet(`patternLength${id}`));
+  const rate = await Number(await redisGet(`rate${id}`));
   let score = await Number(await redisGet(`score${id}`));
   let combo = await Number(await redisGet(`combo${id}`));
   let perfect = await Number(await redisGet(`perfect${id}`));
@@ -115,19 +116,20 @@ const calculateScore = async (judge, id) => {
   let good = await Number(await redisGet(`good${id}`));
   let bad = await Number(await redisGet(`bad${id}`));
   combo++;
+  const basicScore = 100000000 / patternLength;
   if (judge == "perfect") {
-    score += Math.round(100000000 / patternLength) + combo * 5;
+    score += Math.round((basicScore + combo * 5) * rate);
     perfect++;
   } else if (judge == "great") {
-    score += Math.round((100000000 / patternLength) * 0.5) + combo * 5;
+    score += Math.round((basicScore * 0.5 + combo * 5) * rate);
     great++;
   } else if (judge == "good") {
-    score += Math.round((100000000 / patternLength) * 0.2) + combo * 3;
+    score += Math.round((basicScore * 0.2 + combo * 3) * rate);
     good++;
   } else {
     bad++;
     combo = 0;
-    score += Math.round((100000000 / patternLength) * 0.05);
+    score += Math.round(basicScore * 0.05 * rate);
   }
   redisClient.set(`combo${id}`, combo);
   redisClient.set(`score${id}`, score);
