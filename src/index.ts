@@ -369,10 +369,10 @@ io.on("connection", (socket) => {
             Math.sqrt(Math.pow(powX, 2) + Math.pow(powY, 2)) <=
             width / 40 + width / 70
           ) {
-            const perfectJudge = 60000 / bpm / 8;
-            const greatJudge = 60000 / bpm / 5;
-            const goodJudge = 60000 / bpm / 3;
-            const badJudge = 60000 / bpm / 2;
+            const perfectJudge = (60000 / bpm / 8) * rate;
+            const greatJudge = (60000 / bpm / 5) * rate;
+            const goodJudge = (60000 / bpm / 3) * rate;
+            const badJudge = (60000 / bpm / 2) * rate;
             const noteMs = renderNotes[i].ms;
             if (seek < noteMs + perfectJudge && seek > noteMs - perfectJudge) {
               signale.success(`${socket.id} : Perfect`);
