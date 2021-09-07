@@ -152,18 +152,14 @@ io.on("connection", (socket) => {
     const isUserConnected = await redisGet(`score${socket.id}`);
     if (isUserConnected === null) {
       signale.success(`${socket.id} : Game Initialized`);
-      fs.readFile(
-        patternDir + getPatternDir(name, difficulty),
-        "utf8",
-        (err, file) => {
-          const data = JSON.parse(file);
-          redisClient.set(`pattern${socket.id}`, file);
-          redisClient.set(`bpm${socket.id}`, data.information.bpm);
-          redisClient.set(`speed${socket.id}`, data.information.speed);
-          redisClient.set(`patternLength${socket.id}`, data.patterns.length);
-          redisClient.set(`name${socket.id}`, data.information.track);
-        }
-      );
+      fs.readFile(patternDir + getPatternDir(name, difficulty), "utf8", (err, file) => {
+        const data = JSON.parse(file);
+        redisClient.set(`pattern${socket.id}`, file);
+        redisClient.set(`bpm${socket.id}`, data.information.bpm);
+        redisClient.set(`speed${socket.id}`, data.information.speed);
+        redisClient.set(`patternLength${socket.id}`, data.patterns.length);
+        redisClient.set(`name${socket.id}`, data.information.track);
+      });
       redisClient.set(`rate${socket.id}`, rate);
       redisClient.set(`difficulty${socket.id}`, difficulty);
       redisClient.set(`score${socket.id}`, 0);
@@ -209,9 +205,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("game update", async (x, y, offset, date) => {
-    const pattern = await JSON.parse(
-      `${await redisGet(`pattern${socket.id}`)}`
-    );
+    const pattern = await JSON.parse(`${await redisGet(`pattern${socket.id}`)}`);
     try {
       const rate = Number(await redisGet(`rate${socket.id}`));
       const w = Number(await redisGet(`w${socket.id}`));
@@ -220,12 +214,8 @@ io.on("connection", (socket) => {
       const ms = Number(await redisGet(`ms${socket.id}`));
       let bpm = Number(await redisGet(`bpm${socket.id}`));
       let speed = Number(await redisGet(`speed${socket.id}`));
-      let destroyedBullets: number[] = await redisSGet(
-        `destroyedBullets${socket.id}`
-      );
-      let destroyedNotes: number[] = await redisSGet(
-        `destroyedNotes${socket.id}`
-      );
+      let destroyedBullets: number[] = await redisSGet(`destroyedBullets${socket.id}`);
+      let destroyedNotes: number[] = await redisSGet(`destroyedNotes${socket.id}`);
       destroyedBullets = destroyedBullets.map(Number);
       destroyedNotes = destroyedNotes.map(Number);
       let circleBulletAngles = await redisGet(`circleBulletAngles${socket.id}`);
@@ -238,10 +228,7 @@ io.on("connection", (socket) => {
         if (renderTriggers[i].value == 0) {
           if (destroyedBullets.indexOf(renderTriggers[i].num) == -1) {
             await destroyedBullets.push(renderTriggers[i].num);
-            redisClient.sadd(
-              `destroyedBullets${socket.id}`,
-              renderTriggers[i].num
-            );
+            redisClient.sadd(`destroyedBullets${socket.id}`, renderTriggers[i].num);
           }
         } else if (renderTriggers[i].value == 1) {
           end = upperBound(pattern.bullets, renderTriggers[i].ms);
@@ -274,41 +261,17 @@ io.on("connection", (socket) => {
             ey = e.location + p * getTan(e.angle) * (left ? 1 : -1);
           } else {
             if (!circleBulletAngles[start + i]) {
-              circleBulletAngles[start + i] = calcAngleDegrees(
-                (left ? -100 : 100) - x,
-                e.location - y
-              );
-              redisClient.set(
-                `circleBulletAngles${socket.id}`,
-                circleBulletAngles.toString()
-              );
+              circleBulletAngles[start + i] = calcAngleDegrees((left ? -100 : 100) - x, e.location - y);
+              redisClient.set(`circleBulletAngles${socket.id}`, circleBulletAngles.toString());
             }
             if (left) {
-              if (
-                110 > circleBulletAngles[start + i] &&
-                circleBulletAngles[start + i] > 0
-              )
-                circleBulletAngles[start + i] = 110;
-              else if (
-                0 > circleBulletAngles[start + i] &&
-                circleBulletAngles[start + i] > -110
-              )
-                circleBulletAngles[start + i] = -110;
+              if (110 > circleBulletAngles[start + i] && circleBulletAngles[start + i] > 0) circleBulletAngles[start + i] = 110;
+              else if (0 > circleBulletAngles[start + i] && circleBulletAngles[start + i] > -110) circleBulletAngles[start + i] = -110;
             } else {
-              if (
-                70 < circleBulletAngles[start + i] &&
-                circleBulletAngles[start + i] > 0
-              )
-                circleBulletAngles[start + i] = 70;
-              else if (
-                0 > circleBulletAngles[start + i] &&
-                circleBulletAngles[start + i] < -70
-              )
-                circleBulletAngles[start + i] = -70;
+              if (70 < circleBulletAngles[start + i] && circleBulletAngles[start + i] > 0) circleBulletAngles[start + i] = 70;
+              else if (0 > circleBulletAngles[start + i] && circleBulletAngles[start + i] < -70) circleBulletAngles[start + i] = -70;
             }
-            ey =
-              e.location +
-              p * getTan(circleBulletAngles[start + i]) * (left ? 1 : -1);
+            ey = e.location + p * getTan(circleBulletAngles[start + i]) * (left ? 1 : -1);
           }
           const powX = (x - ex) * w;
           const powY = (y - ey) * h;
@@ -327,10 +290,7 @@ io.on("connection", (socket) => {
       end = upperBound(pattern.patterns, seek);
       const renderNotes = pattern.patterns.slice(start, end);
       for (let i = 0; i < renderNotes.length; i++) {
-        const p =
-          (((bpm * 14) / speed - (renderNotes[i].ms - seek)) /
-            ((bpm * 14) / speed)) *
-          100;
+        const p = (((bpm * 14) / speed - (renderNotes[i].ms - seek)) / ((bpm * 14) / speed)) * 100;
         if (p >= 120 && destroyedNotes.indexOf(start + i) == -1) {
           destroyedNotes.push(start + i);
           redisClient.sadd(`destroyedNotes${socket.id}`, start + i);
@@ -348,6 +308,7 @@ io.on("connection", (socket) => {
     const pattern = await JSON.parse(
       `${await redisGet(`pattern${socket.id}`)}`
     );
+    const pattern = await JSON.parse(`${await redisGet(`pattern${socket.id}`)}`);
     try {
       const rate = Number(await redisGet(`rate${socket.id}`));
       const ms = Number(await redisGet(`ms${socket.id}`));
@@ -358,18 +319,13 @@ io.on("connection", (socket) => {
       const end = upperBound(pattern.patterns, seek + (bpm * 14) / speed);
       const renderNotes = pattern.patterns.slice(start, end);
       const width = Number(await redisGet(`width${socket.id}`));
-      let destroyedNotes: number[] = await redisSGet(
-        `destroyedNotes${socket.id}`
-      );
+      let destroyedNotes: number[] = await redisSGet(`destroyedNotes${socket.id}`);
       destroyedNotes = destroyedNotes.map(Number);
       for (let i = 0; i < renderNotes.length; i++) {
         if (destroyedNotes.indexOf(start + i) == -1) {
           const powX = (x - renderNotes[i].x) * 9.6;
           const powY = (y - renderNotes[i].y) * 5.4;
-          if (
-            Math.sqrt(Math.pow(powX, 2) + Math.pow(powY, 2)) <=
-            width / 40 + width / 70
-          ) {
+          if (Math.sqrt(Math.pow(powX, 2) + Math.pow(powY, 2)) <= width / 40 + width / 70) {
             const perfectJudge = (60000 / bpm / 8) * rate;
             const greatJudge = (60000 / bpm / 5) * rate;
             const goodJudge = (60000 / bpm / 3) * rate;
@@ -378,19 +334,13 @@ io.on("connection", (socket) => {
             if (seek < noteMs + perfectJudge && seek > noteMs - perfectJudge) {
               signale.success(`${socket.id} : Perfect`);
               calculateScore("perfect", socket.id);
-            } else if (
-              seek < noteMs + greatJudge &&
-              seek > noteMs - greatJudge
-            ) {
+            } else if (seek < noteMs + greatJudge && seek > noteMs - greatJudge) {
               signale.success(`${socket.id} : Great`);
               calculateScore("great", socket.id);
             } else if (seek > noteMs - goodJudge && seek < noteMs) {
               signale.success(`${socket.id} : Good`);
               calculateScore("good", socket.id);
-            } else if (
-              (seek > noteMs - badJudge && seek < noteMs) ||
-              noteMs < seek
-            ) {
+            } else if ((seek > noteMs - badJudge && seek < noteMs) || noteMs < seek) {
               signale.success(`${socket.id} : Bad`);
               calculateScore("bad", socket.id);
             } else {
@@ -420,13 +370,7 @@ io.on("connection", (socket) => {
     const bad = await Number(await redisGet(`bad${socket.id}`));
     const miss = await Number(await redisGet(`miss${socket.id}`));
     const bullet = await Number(await redisGet(`bullet${socket.id}`));
-    const accuracy = Number(
-      (
-        ((perfect + (great / 10) * 7 + good / 2 + (bad / 10) * 3) /
-          (perfect + great + good + bad + miss + bullet)) *
-        100
-      ).toFixed(1)
-    );
+    const accuracy = Number((((perfect + (great / 10) * 7 + good / 2 + (bad / 10) * 3) / (perfect + great + good + bad + miss + bullet)) * 100).toFixed(1));
     let rank = "";
     let medal = 1;
     if (accuracy >= 98 && bad == 0 && miss == 0 && bullet == 0) {
@@ -453,18 +397,7 @@ io.on("connection", (socket) => {
         medal = 7;
       }
     }
-    io.to(socket.id).emit(
-      "game result",
-      perfect,
-      great,
-      good,
-      bad,
-      miss,
-      bullet,
-      score,
-      accuracy,
-      rank
-    );
+    io.to(socket.id).emit("game result", perfect, great, good, bad, miss, bullet, score, accuracy, rank);
     fetch(`${config.project.api}/record`, {
       method: "PUT",
       body: JSON.stringify({
