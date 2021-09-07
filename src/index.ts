@@ -293,7 +293,7 @@ io.on("connection", (socket) => {
         const p = (((bpm * 14) / speed - (renderNotes[i].ms - seek)) / ((bpm * 14) / speed)) * 100;
         if (p >= 120 && destroyedNotes.indexOf(start + i) == -1) {
           destroyedNotes.push(start + i);
-          redisClient.sadd(`destroyedNotes${socket.id}`, start + i);
+          await redisClient.sadd(`destroyedNotes${socket.id}`, start + i);
           signale.success(`${socket.id} : Miss`);
           calculateScore("miss", socket.id);
         }
@@ -304,10 +304,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("game click", async (x, y, offset, date) => {
-    const pattern = await JSON.parse(
-      `${await redisGet(`pattern${socket.id}`)}`
-    );
+  socket.on("game click", async (x, y, offset, date, key, isWheel) => {
     const pattern = await JSON.parse(`${await redisGet(`pattern${socket.id}`)}`);
     try {
       const rate = Number(await redisGet(`rate${socket.id}`));
@@ -325,7 +322,9 @@ io.on("connection", (socket) => {
         if (destroyedNotes.indexOf(start + i) == -1) {
           const powX = (x - renderNotes[i].x) * 9.6;
           const powY = (y - renderNotes[i].y) * 5.4;
-          if (Math.sqrt(Math.pow(powX, 2) + Math.pow(powY, 2)) <= width / 40 + width / 70) {
+          const isClickedNote = Math.sqrt(Math.pow(powX, 2) + Math.pow(powY, 2)) <= width / 40 + width / 70;
+          if (isClickedNote && (renderNotes[i].value == 0) == !isWheel) {
+            if (renderNotes[i].value == 1 && renderNotes[i].direction != key) return;
             const perfectJudge = (60000 / bpm / 8) * rate;
             const greatJudge = (60000 / bpm / 5) * rate;
             const goodJudge = (60000 / bpm / 3) * rate;
