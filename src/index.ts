@@ -33,7 +33,7 @@ const redisClient = redis.createClient(config.database.redis);
 
 const io = require("socket.io")(config.project.port);
 
-const patternDir = __dirname + "/../patterns/";
+const patternDir = __dirname + "/../URLATE-patterns/";
 
 const getPatternDir = (name, difficulty) => {
   return `${name}/${difficulty}.json`;
