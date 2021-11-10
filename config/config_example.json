@@ -1,6 +1,8 @@
 {
-  "project" : {
+  "project": {
+    "auth": "authkey",
     "api": "https://api.example.com",
+    "cdn": "https://cdn.example.com",
     "secretKey": "Something Random",
     "port": 8080
   },

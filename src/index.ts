@@ -148,18 +148,38 @@ io.on("connection", (socket) => {
   redisClient.set(`socket${socket.id}`, socket.handshake.query.id);
   redisClient.set(`user${socket.id}`, socket.handshake.query.name);
 
-  socket.on("game init", async (name, difficulty, rate) => {
+  socket.on("game init", async (name, difficulty, rate, patternId) => {
     const isUserConnected = await redisGet(`score${socket.id}`);
     if (isUserConnected === null) {
       signale.success(`${socket.id} : Game Initialized`);
-      fs.readFile(patternDir + getPatternDir(name, difficulty), "utf8", (err, file) => {
-        const data = JSON.parse(file);
-        redisClient.set(`pattern${socket.id}`, file);
-        redisClient.set(`bpm${socket.id}`, data.information.bpm);
-        redisClient.set(`speed${socket.id}`, data.information.speed);
-        redisClient.set(`patternLength${socket.id}`, data.patterns.length);
-        redisClient.set(`name${socket.id}`, data.information.track);
-      });
+      if (patternId) {
+        fetch(`${config.project.cdn}/CPL/${patternId}.json`, {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            Authorization: config.project.auth,
+          },
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            signale.warn(`${socket.id} : CPL detected.`);
+            redisClient.set(`pattern${socket.id}`, JSON.stringify(data));
+            redisClient.set(`patternId${socket.id}`, patternId);
+            redisClient.set(`bpm${socket.id}`, data.information.bpm);
+            redisClient.set(`speed${socket.id}`, data.information.speed);
+            redisClient.set(`patternLength${socket.id}`, data.patterns.length);
+            redisClient.set(`name${socket.id}`, data.information.track);
+          });
+      } else {
+        fs.readFile(patternDir + getPatternDir(name, difficulty), "utf8", (err, file) => {
+          const data = JSON.parse(file);
+          redisClient.set(`pattern${socket.id}`, file);
+          redisClient.set(`bpm${socket.id}`, data.information.bpm);
+          redisClient.set(`speed${socket.id}`, data.information.speed);
+          redisClient.set(`patternLength${socket.id}`, data.patterns.length);
+          redisClient.set(`name${socket.id}`, data.information.track);
+        });
+      }
       redisClient.set(`rate${socket.id}`, rate);
       redisClient.set(`difficulty${socket.id}`, difficulty);
       redisClient.set(`score${socket.id}`, 0);
@@ -359,6 +379,7 @@ io.on("connection", (socket) => {
 
   socket.on("game end", async (maxCombo) => {
     signale.stop(`${socket.id} : Game Finished`);
+    const id = await redisGet(`patternId${socket.id}`);
     const name = await redisGet(`name${socket.id}`);
     const user = await redisGet(`user${socket.id}`);
     const difficulty = await Number(await redisGet(`difficulty${socket.id}`));
@@ -397,24 +418,46 @@ io.on("connection", (socket) => {
       }
     }
     io.to(socket.id).emit("game result", perfect, great, good, bad, miss, bullet, score, accuracy, rank);
-    fetch(`${config.project.api}/record`, {
-      method: "PUT",
-      body: JSON.stringify({
-        secret: config.project.secretKey,
-        name: name,
-        nickname: user,
-        rank: rank,
-        record: score,
-        maxcombo: maxCombo,
-        medal: medal,
-        difficulty: difficulty + 1,
-      }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }).catch((error) => {
-      console.log("error", error);
-    });
+    if (id) {
+      fetch(`${config.project.api}/CPLrecord`, {
+        method: "PUT",
+        body: JSON.stringify({
+          secret: config.project.secretKey,
+          id: id,
+          name: name,
+          nickname: user,
+          rank: rank,
+          record: score,
+          maxcombo: maxCombo,
+          medal: medal,
+          difficulty: difficulty + 1,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }).catch((error) => {
+        console.log("error", error);
+      });
+    } else {
+      fetch(`${config.project.api}/record`, {
+        method: "PUT",
+        body: JSON.stringify({
+          secret: config.project.secretKey,
+          name: name,
+          nickname: user,
+          rank: rank,
+          record: score,
+          maxcombo: maxCombo,
+          medal: medal,
+          difficulty: difficulty + 1,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }).catch((error) => {
+        console.log("error", error);
+      });
+    }
   });
 
   socket.on("disconnect", () => {
