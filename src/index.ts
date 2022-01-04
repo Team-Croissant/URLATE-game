@@ -336,14 +336,17 @@ io.on("connection", (socket) => {
       const end = upperBound(pattern.patterns, seek + (bpm * 14) / speed);
       const renderNotes = pattern.patterns.slice(start, end);
       const width = Number(await redisGet(`width${socket.id}`));
+      const w = Number(await redisGet(`w${socket.id}`));
+      const h = Number(await redisGet(`h${socket.id}`));
       let destroyedNotes: number[] = await redisSGet(`destroyedNotes${socket.id}`);
       destroyedNotes = destroyedNotes.map(Number);
       for (let i = 0; i < renderNotes.length; i++) {
         if (destroyedNotes.indexOf(start + i) == -1) {
-          const powX = (x - renderNotes[i].x) * 9.6;
-          const powY = (y - renderNotes[i].y) * 5.4;
+          const powX = (x - renderNotes[i].x) * w;
+          const powY = (y - renderNotes[i].y) * h;
           const isClickedNote = Math.sqrt(Math.pow(powX, 2) + Math.pow(powY, 2)) <= width / 40 + width / 70;
-          if (isClickedNote && (renderNotes[i].value == 0) == !isWheel) {
+          const p = (((bpm * 14) / speed - (renderNotes[i].ms - seek)) / ((bpm * 14) / speed)) * 100;
+          if (isClickedNote && (renderNotes[i].value == 0) == !isWheel && p >= 50) {
             if (renderNotes[i].value == 1 && renderNotes[i].direction != key) return;
             const perfectJudge = (60000 / bpm / 8) * rate;
             const greatJudge = (60000 / bpm / 5) * rate;
